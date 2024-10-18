@@ -2,11 +2,11 @@
   "name": "todo-app-backend",
   "version": "1.0.0",
   "description": "---",
-  "main": "src/server.ts",
+  "main": "src/index.ts",
   "scripts": {
-    "start": "tsx src/server.ts",
-    "start:dev": "tsx watch src/server.ts",
-    "build": "tsup src",
+    "start": "tsx src/index.ts",
+    "start:dev": "tsx watch src/index.ts",
+    "build": "node build.mjs",
     "test": "vitest"
   },
   "keywords": [],
@@ -14,6 +14,7 @@
   "license": "ISC",
   "devDependencies": {
     "@eslint/js": "^9.12.0",
+    "@types/bcrypt": "^5.0.2",
     "@types/node": "^22.7.5",
     "eslint": "^9.12.0",
     "globals": "^15.11.0",
@@ -25,10 +26,17 @@
     "vitest": "^2.1.3"
   },
   "dependencies": {
+    "@fastify/autoload": "^6.0.2",
+    "@fastify/cookie": "^11.0.1",
     "@fastify/cors": "^10.0.1",
+    "@fastify/jwt": "^9.0.1",
     "@fastify/static": "^8.0.1",
+    "@gquittet/graceful-server": "^5.2.6",
     "@prisma/client": "^5.21.0",
+    "bcrypt": "^5.1.1",
     "fastify": "^5.0.0",
+    "fastify-type-provider-zod": "^4.0.2",
+    "ioredis": "^5.4.1",
     "zod": "^3.23.8"
   }
 }
