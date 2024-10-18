@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todo App</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f0f0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      #app {
+        width: 100%;
+        max-width: 800px;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      h1,
+      h2 {
+        text-align: center;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      input,
+      button {
+        padding: 10px;
+        font-size: 16px;
+      }
+      button {
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+      }
+      li {
+        background-color: white;
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      .todo-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      @media (max-width: 600px) {
+        #app {
+          padding: 10px;
+        }
+      }
+    </style>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue-router@4"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script type="module">
+      const { createApp, ref } = Vue;
+      const { createRouter, createWebHistory } = VueRouter;
+
+      const App = {
+        template: `
+          <div>
+            <h1>Todo App</h1>
+            <router-view></router-view>
+          </div>
+        `,
+      };
+
+      const Signup = {
+        setup() {
+          const name = ref("");
+          const email = ref("");
+          const password = ref("");
+          const error = ref("");
+
+          const signup = async () => {
+            try {
+              const response = await axios.post("/api/users", {
+                name: name.value,
+                email: email.value,
+                password: password.value,
+              });
+              localStorage.setItem("accessToken", response.data.accessToken);
+              router.push("/todos");
+            } catch (err) {
+              error.value = "Error creating account";
+            }
+          };
+
+          return { name, email, password, error, signup };
+        },
+        template: `
+          <div>
+            <h2>Sign Up</h2>
+            <form @submit.prevent="signup">
+              <input type="text" v-model="name" placeholder="Name" required>
+              <input type="email" v-model="email" placeholder="Email" required>
+              <input type="password" v-model="password" placeholder="Password" required>
+              <button type="submit">Sign Up</button>
+            </form>
+            <p v-if="error" style="color: red; text-align: center;">{{ error }}</p>
+            <p style="text-align: center;">Already have an account? <router-link to="/">Login</router-link></p>
+          </div>
+        `,
+      };
+
+      const Login = {
+        setup() {
+          const email = ref("");
+          const password = ref("");
+          const error = ref("");
+
+          const login = async () => {
+            try {
+              const response = await axios.post("/api/auth", {
+                email: email.value,
+                password: password.value,
+              });
+              localStorage.setItem("accessToken", response.data.accessToken);
+              router.push("/todos");
+            } catch (err) {
+              error.value = "Invalid email or password";
+            }
+          };
+
+          return { email, password, error, login };
+        },
+        template: `
+          <div>
+            <h2>Login</h2>
+            <form @submit.prevent="login">
+              <input type="email" v-model="email" placeholder="Email" required>
+              <input type="password" v-model="password" placeholder="Password" required>
+              <button type="submit">Login</button>
+            </form>
+            <p v-if="error" style="color: red; text-align: center;">{{ error }}</p>
+            <p style="text-align: center;">Don't have an account? <router-link to="/signup">Sign Up</router-link></p>
+          </div>
+        `,
+      };
+
+      const TodoList = {
+        setup() {
+          const todos = ref([]);
+          const newTodo = ref({ title: "", body: "" });
+          const editingTodo = ref(null);
+
+          const fetchTodos = async () => {
+            try {
+              const response = await axios.get("/api/todos", {
+                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+              });
+              todos.value = response.data;
+            } catch (error) {
+              console.error("Error fetching todos:", error);
+            }
+          };
+
+          const createTodo = async () => {
+            try {
+              await axios.post("/api/todos", newTodo.value, {
+                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+              });
+              newTodo.value = { title: "", body: "" };
+              fetchTodos();
+            } catch (error) {
+              console.error("Error creating todo:", error);
+            }
+          };
+
+          const updateTodo = async (todo) => {
+            try {
+              await axios.put(`/api/todos/${todo.id}`, todo, {
+                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+              });
+              editingTodo.value = null;
+              fetchTodos();
+            } catch (error) {
+              console.error("Error updating todo:", error);
+            }
+          };
+
+          const deleteTodo = async (id) => {
+            try {
+              await axios.delete(`/api/todos/${id}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+              });
+              fetchTodos();
+            } catch (error) {
+              console.error("Error deleting todo:", error);
+            }
+          };
+
+          const toggleTodo = async (todo) => {
+            try {
+              await axios.put(
+                `/api/todos/${todo.id}`,
+                { completed: !todo.completed },
+                {
+                  headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+                }
+              );
+              fetchTodos();
+            } catch (error) {
+              console.error("Error toggling todo:", error);
+            }
+          };
+
+          const logout = () => {
+            localStorage.removeItem("accessToken");
+            router.push("/");
+          };
+
+          fetchTodos();
+
+          return {
+            todos,
+            newTodo,
+            editingTodo,
+            createTodo,
+            updateTodo,
+            deleteTodo,
+            toggleTodo,
+            logout,
+          };
+        },
+        template: `
+          <div>
+            <h2>Todo List</h2>
+            <button @click="logout" style="margin-bottom: 20px;">Logout</button>
+            <form @submit.prevent="createTodo">
+              <input v-model="newTodo.title" placeholder="Title" required>
+              <input v-model="newTodo.body" placeholder="Body" required>
+              <button type="submit">Add Todo</button>
+            </form>
+            <ul>
+              <li v-for="todo in todos" :key="todo.id">
+                <template v-if="editingTodo === todo.id">
+                  <input v-model="todo.title">
+                  <input v-model="todo.body">
+                  <div class="todo-actions">
+                    <button @click="updateTodo(todo)">Save</button>
+                    <button @click="editingTodo = null">Cancel</button>
+                  </div>
+                </template>
+                <template v-else>
+                  <input type="checkbox" :checked="todo.completed" @change="toggleTodo(todo)">
+                  <span :style="{ textDecoration: todo.completed ? 'line-through' : 'none' }">
+                    {{ todo.title }} - {{ todo.body }}
+                  </span>
+                  <div class="todo-actions">
+                    <button @click="editingTodo = todo.id">Edit</button>
+                    <button @click="deleteTodo(todo.id)">Delete</button>
+                  </div>
+                </template>
+              </li>
+            </ul>
+          </div>
+        `,
+      };
+
+      const routes = [
+        { path: "/", component: Login },
+        { path: "/todos", component: TodoList },
+        { path: "/signup", component: Signup },
+      ];
+
+      const router = createRouter({
+        history: createWebHistory(),
+        routes,
+      });
+
+      router.beforeEach((to, from, next) => {
+        const publicPages = ["/", "/signup"];
+        const authRequired = !publicPages.includes(to.path);
+        const loggedIn = localStorage.getItem("accessToken");
+
+        if (authRequired && !loggedIn) {
+          next("/");
+        } else {
+          next();
+        }
+      });
+
+      const app = createApp(App);
+      app.use(router);
+      app.mount("#app");
+    </script>
+  </body>
+</html>
