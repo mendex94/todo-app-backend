@@ -31,8 +31,6 @@ services:
       - "traefik.http.routers.todo-app.entrypoints=websecure"
       - "traefik.http.routers.todo-app.tls.certresolver=myresolver"
       - "traefik.http.routers.todo-app.rule=Host(`todo-app.site`)"
-    ports:
-      - "3333:3333"
     environment:
       - DATABASE_URL=postgresql://admin:admin@postgres:5432/todo-app?schema=public
       - REDIS_PORT
